@@ -1,53 +1,98 @@
 import React, { Component } from 'react';
+import axios from 'axios';
 import logo from './logo.svg';
 import './App.css';
-import CardList from './CardList';
+// import CardList from './CardList';
+import fetchCards from './Scryfall'
+import CubeListContainer from './CubeList';
+import {BrowserRouter, Route} from 'react-router-dom';
 
-class App extends Component {
+const CardListItem = props => (
+    <img src={props.img} alt="" height="350"/>
+);
 
-  componentDidMount(){
-    var url = "https://api.scryfall.com/cards/search?q=cube:vintage"
-    fetch(url).then(
-      response => response.json().then(
-        json => {
-          var cards2 = json.data.map(card => card.name )
-          console.log(cards2)
-          this.setState({cards: cards2})
-        }
-      )
-    )
+const CardList = props =>
+  props.items.map(item => <CardListItem key={item.name} {...item} />);
 
-  }
-
-  constructor() {
-    super()
-    this.state = {
-      cards:[]
-    }
-
-  }
-
+class CubeButton extends React.Component {
 
   render() {
-    var firstCard = ""
-    if (this.state.cards.count !== 0) {
-      firstCard = this.state.cards[0]
-    }
-
-    console.log(firstCard)
-
+    const { 
+      variant,
+      content,
+      ...others
+    } = this.props;
+    
     return (
-      <div className="App">
-        <header className="App-header">
-          <img src={logo} className="App-logo" alt="logo" />
-          <p>
-            Edit <code>src/App.js</code> and save to reload.
-          </p>
-          <CardList cards={this.state.cards}/>
-        </header>
+      <button className={variant} {...others}>
+        {content}
+      </button>
+    )
+  }
+}
+
+class CardGetter extends React.Component {
+    state = {
+    items: [],
+    cube: 0
+  };
+    getData(url) {
+    axios.get(url).then(result => {
+      const { data } = result;
+
+      // update the state.
+      // state is updated in a non-mutating way combining existing data with new data.
+      this.setState(prevState => ({
+        items: [...prevState.items, ...data.cards],
+      }));
+
+      // if there is more data to fetch, call getData again.
+      //if (data.has_more) {
+      //  this.getData(data.next_page);
+      //}
+    });
+  }
+
+  componentDidMount(){
+    const initialUrl = 'http://172.31.32.90:5000/mock/cubes/' + this.props.id;
+    this.getData(initialUrl);
+  } 
+
+    render() {
+    return (
+      <div>
+        <div className="App">
+          <header className="App-header">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/3/3f/Magicthegathering-logo.svg" className="App-logo" alt="logo" />
+            <img src="https://i.imgur.com/iAMYae4.png" className="App-logo" alt="logo" />
+            <p>
+              (Z->)90° - (E-N²W)90°t=1
+            </p>
+          </header>
+          <CardList items={this.state.items} />
+        </div>
       </div>
     );
   }
+}
+
+class App extends Component {
+
+
+
+
+  render() {
+    return (
+      <BrowserRouter>
+        <div>
+          <Route path='/cubes' component={CubeListContainer} />
+          <Route path='/cubes/:id' component={props => <CardGetter id={props.match.params.id} />} />
+        </div>
+      </BrowserRouter>
+    )
+  }
+
+
 }
 
 export default App;
